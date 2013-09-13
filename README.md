@@ -19,7 +19,6 @@ A precompiled Haxmin.n can be found in bin/. Binary file of [Neko ](https://gith
 
 ## Future
 The following features are planned to be added to program in future:
-*	Either make program strip out "class path" strings that are inserted for Type API, or make it obfuscate them as well.
 *	Balance get_/set_ prefix obfuscation to warrant smallest filesizes.
 *	Possibly add micro-optimizations to reduce file size even further.
 *	Possibly include "legal" unicode characters in renamed identifiers while keeping their lengths in mind.

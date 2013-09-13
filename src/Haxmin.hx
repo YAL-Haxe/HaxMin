@@ -193,7 +193,8 @@ class Haxmin {
 			nx1:Int = 0, // next.length - 1
 			rget:String = "get_", rset:String = "set_", // renamed get_\set_
 			il1:Int = CL_IDENT.length, ilx:Int = CL_IDENTX.length,
-			i:Int, l:Int, j:Int, c:Int, mi:Int, mc:Int, s:String, tk:Token, z:Bool, w:Bool;
+			i:Int, l:Int, j:Int, c:Int,
+			mi:Int, mc:Int, ms:String, s:String, tk:Token, z:Bool, w:Bool;
 		i = -1; l = exlist.length; while (++i < l) exclude.set(exlist[i], true);
 		for (k in SL_KEYWORD.keys()) exclude.set(k, true);
 		i = -1; l = SL_EXCLUDE.length; while (++i < l) exclude.set(SL_EXCLUDE[i], true);
@@ -252,7 +253,7 @@ class Haxmin {
 				+ (Math.random() < 0.5 ? "$" : "_");
 			do { rset = CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length))
 				+ (Math.random() < 0.5 ? "$" : "_");
-			}while (rset == rget);
+			} while (rset == rget);
 		} else {
 			rget = (Math.random() < 0.5 ? "$" : "_")
 				+ CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length));
@@ -323,6 +324,28 @@ class Haxmin {
 				case TId(_): list[i] = TId(s);
 				default: list[i] = TSt(s);
 				}
+			} else if (o.length > 1) switch (tk) {
+			case TSt(o):
+				j = -1; c = o.length; s = ""; mi = 0; mc = 0;
+				while (++j <= c) switch (ms = (j < c ? o.charAt(j) : ".")) {
+				case ".":
+					ms = o.substring(mi, j);
+					if (mi == j) break;
+					if (changes.exists(ms)) {
+						ms = changes.get(ms);
+					} else if (!exclude.exists(ms)) {
+						j = 0;
+						break;
+					}
+					if (s != "") s += ".";
+					s += ms;
+					mi = j + 1;
+					mc++;
+				default:
+					if ((j == mi ? CL_IDENT : CL_IDENTX).indexOf(ms) < 0) break;
+				}
+				if (mc > 1) list[i] = TSt(s);
+			default:
 			}
 		default:
 		}
