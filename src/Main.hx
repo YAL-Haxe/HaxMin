@@ -33,12 +33,19 @@ class Main {
 		// add exclusion word sources from arguments:
 		for (i in 2 ... args.length) listFiles.push(args[i]);
 		// load additional exclusion words from files:
-		for (p in listFiles) try {
+		for (p in listFiles) if (p.charAt(0) == "[") {
+			var j = p.indexOf("]");
+			if (j < 0) {
+				Lib.print("Identifier list has no end: " + p);
+				continue;
+			}
+			var words = p.substring(1, j).split(",");
+			for (word in words) Haxmin.SL_EXCLUDE.push(word);
+			Lib.println("Added identifiers: " + Std.string(words));
+		} else try {
 			var lines = File.getContent(p).split("\n");
 			Lib.println("Loading list from " + p + "...");
-			for (line in lines) {
-				Haxmin.SL_EXCLUDE.push(line);
-			}
+			for (line in lines) Haxmin.SL_EXCLUDE.push(line);
 		} catch (e:Dynamic) { Lib.println("Failed to load from " + p); }
 		//
 		var size0:Int, size1:Int;

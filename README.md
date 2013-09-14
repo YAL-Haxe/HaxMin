@@ -4,12 +4,21 @@ JavaScript obfuscator, powered by Haxe, intended for use with Haxe-generated Jav
 ## Usage
 Pretty straight-forward:
 ```
-	neko Haxmin.n [filepath]
+neko Haxmin.n filePath
+```
+Or also specify the destination file:
+```
+neko Haxmin.n inPath outPath
 ```
 Or add an extra file with "whitelisted" identifier names:
 ```
-	neko Haxmin.n [filepath] [whitelist file path]
+neko Haxmin.n inPath outPath whiteListPath1 whiteListPath2 ...
 ```
+For easier usage you can also pass an "array" with whitelisted identifiers:
+```
+neko Haxmin.n inPath outPath [name1,name2,...]
+```
+
 A precompiled Haxmin.n can be found in bin/. Binary file of [Neko ](https://github.com/HaxeFoundation/neko) is placed as well, just in case.
 "default.txt" contains "default" whitelisted names and contains identifiers from HTML5 API accessible from Haxe (generated from js.html.*). Format for custom whitelist files is also straight-forward: one identifier name per line. Lines are to be terminated with char 10.
 
