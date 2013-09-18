@@ -353,36 +353,46 @@ class Haxmin {
 	}
 	public static function print(list:Array<Token>):String {
 		var r:String = "", s:String, c0:String = "", c1:String, i:Int = -1, l:Int = list.length;
-		var b:StringBuf = new StringBuf(), sl:Int, c:Int = 0, tk:Token;
-		while (++i < l) {
-			s = tkString(tk = list[i]);
-			if (i != 0) {
-				c1 = s.charAt(0);
-				if (c0 == "}" && CL_IDENTX.indexOf(c1) >= 0
-				&& s != "catch" && s != "else" && s != "while") {
-					b.addChar(";".code); c++;
-				} else if ((CL_IDENTX.indexOf(c0) >= 0 && CL_IDENTX.indexOf(c1) >= 0)
-				|| (c0 == "+" && c1 == "+") || (c0 == "-" && c1 == "-")) {
-					b.addChar(" ".code); c++;
+		var b:StringBuf = new StringBuf(), sl:Int, c:Int = 0, tk:Token = null, ltk:Token, sn:String = "";
+		while (++i <= l) {
+			s = sn; ltk = tk;
+			sn = tkString(tk = list[i]);
+			// micro-optimizations and fixes:
+			if (s == "}" && CL_IDENTX.indexOf(sn.charAt(0)) >= 0
+			&& sn != "catch" && sn != "else" && sn != "while") {
+				// add a semicolon after curly brackets, unless they're part of control statements.
+				s += ";";
+			} else if ((s == ";" && (sn == "}" || sn == ")"))
+			|| (s == "," && sn == "]")) {
+				// last colon/semicolon before closing bracket is not needed.
+				s = "";
+			} else {
+				c0 = s.substr(-1);
+				c1 = sn.charAt(0);
+				if ((CL_IDENTX.indexOf(c0) >= 0 && CL_IDENTX.indexOf(c1) >= 0)
+				|| ((c0 == "+" || c0 == "-") && (c1 == "+" || c1 == "-"))) {
+					// "i+++++j" would not exactly work, despite the ease of parsing that right.
+					s += " ";
 				}
 			}
+			if (s == "") continue;
 			b.addSub(s, 0);
-			c0 = s.charAt((sl = s.length) - 1);
-			c += sl;
-			if (c >= 8000) switch (tk) {
+			c += s.length;
+			// linebreaks:
+			if (c >= 8000) switch (ltk) {
 			case TFlow(o):
 				if (o == "}" || o == ";") {
 					c = 0;
 					b.addChar(10);
 				}
 			default:
-				
 			}
 		}
 		return b.toString();
 	}
 	public static function tkString(t:Token):String {
 		var r = "";
+		if (t == null) return r;
 		switch (t) {
 			case TFlow(o): r = o;
 			case TDot: r = ".";
