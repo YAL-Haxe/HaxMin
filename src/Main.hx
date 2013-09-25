@@ -13,7 +13,8 @@ class Main {
 	//
 	static function main() {
 		var path0:String = null, path1:String = null,
-			listFiles:Array<String> = ["default.txt"];
+			params:Array<String> = ["default.txt"],
+			shouldRename:Bool = true;
 		//
 		var args = Sys.args();
 		if (args.length >= 1) {
@@ -31,9 +32,9 @@ class Main {
 			return;
 		}
 		// add exclusion word sources from arguments:
-		for (i in 2 ... args.length) listFiles.push(args[i]);
+		for (i in 2 ... args.length) params.push(args[i]);
 		// load additional exclusion words from files:
-		for (p in listFiles) if (p.charAt(0) == "[") {
+		for (p in params) if (p.charAt(0) == "[") {
 			var j = p.indexOf("]");
 			if (j < 0) {
 				Lib.print("Identifier list has no end: " + p);
@@ -42,6 +43,9 @@ class Main {
 			var words = p.substring(1, j).split(",");
 			for (word in words) Haxmin.SL_EXCLUDE.push(word);
 			Lib.println("Added identifiers: " + Std.string(words));
+		} else if (p.charAt(0) == "/") switch (p.substr(1)) {
+			case "nr", "norename":
+				shouldRename = false;
 		} else try {
 			var lines = File.getContent(p).split("\n");
 			Lib.println("Loading list from " + p + "...");
@@ -61,11 +65,14 @@ class Main {
 		FileSystem.deleteFile(path + "test-min.js");
 		File.saveContent("../src/test-min.js", src);*/
 		//
-		Lib.println("Renaming...");
-		Haxmin.rename(tks, []);
+		if (shouldRename) {
+			Lib.println("Renaming...");
+			Haxmin.rename(tks, []);
+		}
 		Lib.println("Printing...");
 		src = Haxmin.print(tks);
-		Lib.println("Minified+renamed is " + getSizeString(size1 = src.length)
+		Lib.println("Minified" + (shouldRename ? "+renamed" : "")
+		+ "is " + getSizeString(size1 = src.length)
 		+ "(" + Std.int(size1 / size0 * 100) + "%)");
 		Lib.println("Saving...");
 		if (FileSystem.exists(path1)) FileSystem.deleteFile(path1);
