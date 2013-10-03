@@ -55,6 +55,8 @@ class Haxmin {
 		SL_EXCLUDE = [
 		// console and tracing:
 		"console", "assert", "clear", "count", "debug", "error", "info", "log", "time", "trace", "warn",
+		// typeof
+		"object", "boolean", "number", "string", "xml",
 		// top-level in window:
 		"window", "navigator", "document", "body", "location", "href",
 		// elements:
