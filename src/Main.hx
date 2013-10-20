@@ -6,7 +6,7 @@ import sys.FileSystem;
 import sys.io.File;
 
 /**
- * ...
+ * Console (neko) version of program
  * @author YellowAfterlife
  */
 class Main {
@@ -33,20 +33,23 @@ class Main {
 		}
 		// add exclusion word sources from arguments:
 		for (i in 2 ... args.length) params.push(args[i]);
-		// load additional exclusion words from files:
+		// handle arguments:
 		for (p in params) if (p.charAt(0) == "[") {
+			// an "array" of parameters
 			var j = p.indexOf("]");
 			if (j < 0) {
 				Lib.print("Identifier list has no end: " + p);
 				continue;
 			}
 			var words = p.substring(1, j).split(",");
-			for (word in words) Haxmin.SL_EXCLUDE.push(word);
+			for (word in words) Haxmin.SL_EXCLUDE.push(StringTools.trim(word));
 			Lib.println("Added identifiers: " + Std.string(words));
 		} else if (p.charAt(0) == "/") switch (p.substr(1)) {
+			// parse parameters
 			case "nr", "norename":
 				shouldRename = false;
 		} else try {
+			// load exclusion list from file
 			var lines = File.getContent(p).split("\n");
 			Lib.println("Loading list from " + p + "...");
 			for (line in lines) Haxmin.SL_EXCLUDE.push(line);
@@ -57,13 +60,6 @@ class Main {
 		Lib.println("Source is " + getSizeString(size0 = src.length));
 		Lib.println("Seeking...");
 		var tks = Haxmin.parse(src);
-		//
-		/*print("Printing...");
-		src = Haxmin.print(tks);
-		print("Minified is " + src.length + "b");
-		print("Saving...");
-		FileSystem.deleteFile(path + "test-min.js");
-		File.saveContent("../src/test-min.js", src);*/
 		//
 		if (shouldRename) {
 			Lib.println("Renaming...");
@@ -79,13 +75,18 @@ class Main {
 		File.saveContent(path1, src);
 		Lib.println("Done.");
 	}
+	/**
+	 * Returns filesize (in bytes) suffixed appropriately for display
+	 * @param	bytes	
+	 * @return	String, such as "15KB"
+	 */
 	static function getSizeString(bytes:Float):String {
 		var v:Float;
 		if ((v = bytes) < 10000) return Std.int(v) + "B";
-		if ((v /= 1024) < 10000) return Std.int(v) + "KB";
-		if ((v /= 1024) < 10000) return Std.int(v) + "MB";
-		if ((v /= 1024) < 10000) return Std.int(v) + "GB";
-		return Std.int(v /= 1024) + "TB";
+		if ((v /= 1024) < 10000) return (Std.int(v * 10) / 10) + "KB";
+		if ((v /= 1024) < 10000) return (Std.int(v * 10) / 10) + "MB";
+		if ((v /= 1024) < 10000) return (Std.int(v * 10) / 10) + "GB";
+		return (Std.int((v /= 1024) * 10) / 10) + "TB";
 	}
 	/**
 	 * Recursive function, used for finding declarations inside HX files.
@@ -100,6 +101,7 @@ class Main {
 			} else if (Path.extension(fpath) == "hx") {
 				var q:Int, p:Int, d = File.getContent(fpath), s:String;
 				fcount[0]++;
+				// print current filename:
 				Lib.print(fpath);
 				// add @:native()'s:
 				p = 0; while ((p = d.indexOf("@:native(\"", p)) >= 0) {
@@ -126,6 +128,7 @@ class Main {
 					while (s.indexOf(d.charAt(p)) >= 0) p++;
 					map.set(d.substring(q, p), true);
 				}
+				// erase current filename:
 				s = String.fromCharCode(8);
 				Lib.print(StringTools.lpad("", s, fpath.length));
 				Lib.print(StringTools.lpad("", " ", fpath.length));
