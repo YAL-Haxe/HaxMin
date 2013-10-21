@@ -23,7 +23,7 @@ A precompiled Haxmin.n can be found in bin/. Binary file of [Neko ](https://gith
 "default.txt" contains "default" whitelisted names and contains identifiers from HTML5 API accessible from Haxe (generated from js.html.*). Format for custom whitelist files is also straight-forward: one identifier name per line. Lines are to be terminated with char 10.
 
 ## Known issues
-*	Program may accidentally "obfuscate" strings that share names with variables. This happens because it's not possible to easily recognize whether the value is going to be used with Reflect or not. You can fix this by modifying the strings or by creating a whitelist file with them.
+*	Program may accidentally "obfuscate" strings that have contents same as variable names. This happens because it's not possible to easily recognize whether the value is going to be used with Reflect or not. You can fix this by modifying the strings or by creating a whitelist file with them.
 *	"Composing" strings ("my" + "Field" + "1") may cause them to not work with Reflect after obfuscation. Doing so is not a good practice either. Think about it.
 
 ## Future
