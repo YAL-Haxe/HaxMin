@@ -353,6 +353,20 @@ class Haxmin {
 		}
 		//
 	}
+	/// Replaces string characters with escaped symbols with a chance.
+	public static function rEscape(list:Array<Token>, chance:Float):Void {
+		var i:Int = -1, l:Int = list.length, j:Int, m:Int, r:String, n:Int;
+		while (++i < l) switch (list[i]) {
+		case TSt(s):
+			j = -1; m = s.length; r = "";
+			while (++j < m) if (Math.random() < chance) {
+				n = s.charCodeAt(j);
+				r += (n < 0x100) ? ("\\x" + StringTools.hex(n, 2)) : ("\\u" + StringTools.hex(n, 4));
+			} else r += s.charAt(j);
+			if (r != s) list[i] = TSt(r);
+		default:
+		}
+	}
 	public static function print(list:Array<Token>):String {
 		var r:String = "", s:String, c0:String = "", c1:String, i:Int = -1, l:Int = list.length;
 		var b:StringBuf = new StringBuf(), sl:Int, c:Int = 0, tk:Token = null, ltk:Token, sn:String = "";
