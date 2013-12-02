@@ -14,7 +14,8 @@ class Main {
 	static function main() {
 		var path0:String = null, path1:String = null,
 			params:Array<String> = ["default.txt"],
-			shouldRename:Bool = true;
+			shouldRename:Bool = true,
+			debugRename:Bool = false;
 		//
 		var args = Sys.args();
 		if (args.length >= 1) {
@@ -25,6 +26,10 @@ class Main {
 		} else {
 			Lib.println("Usage: haxmin [source file] [destination file] [exclusion files...]");
 			Lib.println("...or: haxmin [path] [exclusion list file]");
+			Lib.println("Supported flags:");
+			Lib.println("-nr/-norename: Disable identifier renaming");
+			Lib.println("-dr/-debugrename: Prefixes identifiers with a $ symbol instead of renaming."
+			+ "Use this flag to debug issues with application going defunct after renaming.");
 			Sys.exit(1);
 		}
 		if (FileSystem.isDirectory(path0)) {
@@ -48,6 +53,8 @@ class Main {
 			// parse parameters
 			case "nr", "norename":
 				shouldRename = false;
+			case "dr", "debugrename":
+				debugRename = true;
 		} else try {
 			// load exclusion list from file
 			var lines = File.getContent(p).split("\n");
@@ -63,7 +70,7 @@ class Main {
 		//
 		if (shouldRename) {
 			Lib.println("Renaming...");
-			Haxmin.rename(tks, []);
+			Haxmin.rename(tks, [], debugRename);
 		}
 		Lib.println("Printing...");
 		src = Haxmin.print(tks);

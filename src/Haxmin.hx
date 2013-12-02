@@ -183,7 +183,7 @@ class Haxmin {
 		return r;
 	}
 	///
-	public static function rename(list:Array<Token>, exlist:Array<String>):Void {
+	public static function rename(list:Array<Token>, exlist:Array<String>, debug:Bool):Void {
 		var refCount:Map<String, Int> = new Map(),
 			exclude:Map<String, Bool> = new Map(),
 			changes:Map<String, String> = new Map(),
@@ -250,23 +250,24 @@ class Haxmin {
 			l--;
 		}
 		// generate get_/set_ remaps:
-		if (Math.random() < 0.5) {
-			rget = CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length))
-				+ (Math.random() < 0.5 ? "$" : "_");
-			do { rset = CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length))
-				+ (Math.random() < 0.5 ? "$" : "_");
-			} while (rset == rget);
-		} else {
-			rget = (Math.random() < 0.5 ? "$" : "_")
-				+ CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length));
-			do { rset = (Math.random() < 0.5 ? "$" : "_")
-				+ CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length));
-			} while (rset == rget);
+		if (!debug) {
+			if (Math.random() < 0.5) {
+				rget = CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length))
+					+ (Math.random() < 0.5 ? "$" : "_");
+				do { rset = CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length))
+					+ (Math.random() < 0.5 ? "$" : "_");
+				} while (rset == rget);
+			} else {
+				rget = (Math.random() < 0.5 ? "$" : "_")
+					+ CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length));
+				do { rset = (Math.random() < 0.5 ? "$" : "_")
+					+ CL_IDENT.charAt(Std.int(Math.random() * CL_IDENT.length));
+				} while (rset == rget);
+			}
 		}
-		//
 		// find new names:
 		i = -1; l = refOrder.length;
-		while (++i < l) {
+		if (!debug) while (++i < l) {
 			s = refOrder[i];
 			if (s == "get_" || s == "set_") {
 				refOrder.splice(i--, 1);
@@ -292,11 +293,18 @@ class Haxmin {
 			|| s.substr(0, rget.length) == rget
 			|| s.substr(0, rset.length) == rset);
 			refGen.push(s);
+		} else while (++i < l) {
+			s = refOrder[i];
+			if (s == "get_" || s == "set_") {
+				refOrder.splice(i--, 1);
+				l--;
+				continue;
+			} else refGen.push("$" + s);
 		}
 		// just renaming identifiers is not enough. let's shuffle them.
 		mi = 0; mc = il1; c = 1;
 		if (mc > l) mc = l;
-		i = -1; while (++i < l) {
+		i = -1; if (!debug) while (++i < l) {
 			if (i >= mi + mc) {
 				mi += mc; c++; mc = il1;
 				j = 1; while (++j <= c) mc *= ilx;
