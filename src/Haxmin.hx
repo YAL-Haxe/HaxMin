@@ -183,7 +183,7 @@ class Haxmin {
 		return r;
 	}
 	///
-	public static function rename(list:Array<Token>, exlist:Array<String>, debug:Bool):Void {
+	public static function rename(list:Array<Token>, exlist:Array<String>, debug:Bool, ns:Bool = true):Void {
 		var refCount:Map<String, Int> = new Map(),
 			exclude:Map<String, Bool> = new Map(),
 			changes:Map<String, String> = new Map(),
@@ -218,7 +218,7 @@ class Haxmin {
 		default:
 		}
 		// second round - search in strings
-		i = -1; while (++i < l) switch (list[i]) {
+		i = -1; if (ns) while (++i < l) switch (list[i]) {
 		case TSt(o):
 			s = o.substr(0, 4);
 			if (s == "get_") {
@@ -326,18 +326,18 @@ class Haxmin {
 					+ (changes.exists(s = o.substr(4)) ? changes.get(s) : s);
 				switch (tk) {
 				case TId(_): list[i] = TId(s);
-				default: list[i] = TSt(s);
+				default: if (ns) list[i] = TSt(s);
 				}
 			} else if (changes.exists(o)) {
 				s = changes.get(o);
 				switch (tk) {
 				case TId(_): list[i] = TId(s);
-				default: list[i] = TSt(s);
+				default: if (ns) list[i] = TSt(s);
 				}
 			} else if (o.length > 1) switch (tk) {
 			case TSt(o):
 				j = -1; c = o.length; s = ""; mi = 0; mc = 0;
-				while (++j <= c) switch (ms = (j < c ? o.charAt(j) : ".")) {
+				if (ns) while (++j <= c) switch (ms = (j < c ? o.charAt(j) : ".")) {
 				case ".":
 					ms = o.substring(mi, j);
 					if (mi == j) break;
