@@ -3385,4 +3385,11 @@ strokeStyle
 closed
 TextTrackList
 image
+BINARY
+FONT
 IMAGE
+MOVIE_CLIP
+MUSIC
+SOUND
+TEMPLATE
+TEXT
