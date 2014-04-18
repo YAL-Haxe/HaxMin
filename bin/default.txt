@@ -3384,3 +3384,5 @@ BLEND_DST_ALPHA
 strokeStyle
 closed
 TextTrackList
+image
+IMAGE
