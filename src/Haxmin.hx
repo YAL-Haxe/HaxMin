@@ -242,7 +242,6 @@ class Haxmin {
 			mi:Int, mc:Int, ms:String, s:String, tk:Token, z:Bool, w:Bool;
 		i = -1; l = exlist.length; while (++i < l) exclude.set(exlist[i], true);
 		for (k in SL_KEYWORD.keys()) exclude.set(k, true);
-		trace(SL_EXCLUDE);
 		i = -1; l = SL_EXCLUDE.length; while (++i < l) exclude.set(SL_EXCLUDE[i], true);
 		// first round - only identifiers
 		i = -1; l = list.length; while (++i < l) switch (list[i]) {
@@ -359,7 +358,6 @@ class Haxmin {
 		}
 		// fill up the renaming map:
 		i = -1; while (++i < l) changes.set(refOrder[i], refGen[i]);
-		//trace(rget + "," + rset);
 		// apply changes!
 		i = -1; l = list.length; while (++i < l) switch (tk = list[i]) {
 		case TId(o), TSt(o):
