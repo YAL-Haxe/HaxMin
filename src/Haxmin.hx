@@ -387,16 +387,22 @@ class Haxmin {
 		}
 	}
 	public static function print(list:Array<Token>):String {
-		var r:String = "", s:String, c0:String = "", c1:String, i:Int = -1, l:Int = list.length;
-		var b:StringBuf = new StringBuf(), sl:Int, c:Int = 0, tk:Token = null, ltk:Token, sn:String = "";
+		var b:StringBuf = new StringBuf(), 
+			i:Int = -1, l:Int = list.length, // iterators
+			s:String, sn:String = "", // string/next string
+			c0:String = "", c1:String,
+			xc:Int, // extra character
+			c:Int = 0, // counter
+			tk:Token = null, ltk:Token; // token/last token
 		while (++i <= l) {
+			xc = 0;
 			s = sn; ltk = tk;
 			sn = tkString(tk = list[i]);
 			// micro-optimizations and fixes:
 			if (s == "}" && CL_IDENTX.indexOf(sn.charAt(0)) >= 0
 			&& sn != "catch" && sn != "else" && sn != "while") {
 				// add a semicolon after curly brackets, unless they're part of control statements.
-				s += ";";
+				xc = ";".code;
 			} else if ((s == ";" && (sn == "}" || sn == ")"))
 			|| (s == "," && sn == "]")) {
 				// last colon/semicolon before closing bracket is not needed.
@@ -407,11 +413,12 @@ class Haxmin {
 				if ((CL_IDENTX.indexOf(c0) >= 0 && CL_IDENTX.indexOf(c1) >= 0)
 				|| ((c0 == "+" || c0 == "-") && (c1 == "+" || c1 == "-"))) {
 					// "i+++++j" would not exactly work, despite the ease of parsing that right.
-					s += " ";
+					xc = " ".code;
 				}
 			}
 			if (s == null) continue;
 			b.addSub(s, 0);
+			if (xc != 0) { b.addChar(xc); c++; }
 			c += s.length;
 			// linebreaks:
 			if (c >= 8000) switch (ltk) {
