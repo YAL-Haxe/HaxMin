@@ -6,9 +6,10 @@ package ;
  */
 //
 enum Token {
-	TFlow(o:String); // ;
+	TFlow(o:Int); // ;
 	TDot; // .
 	TSy(o:String); // {[(...
+	TSi(o:Int); // A single symbol
 	TId(o:String); // identifier
 	TKw(o:String); // for/while/etc.
 	TSt(o:String); // "string"
@@ -99,6 +100,7 @@ class Haxmin {
 		var p:Int = -1, q:Int, l:Int = d.length,
 			c:String, s:String,
 			k:Int, i:Int,
+			z:Bool,
 			r:Array<Token> = [], n:Int = -1;
 		while (++p < l) switch (k = d.charCodeAt(p)) {
 		case "/".code: switch (k = d.charCodeAt(++p)) {
@@ -108,23 +110,24 @@ class Haxmin {
 				while (++p < l && (d.substr(p, 2) != "*/")) { }
 				p++;
 			default:
-				switch (n >= 0 ? r[n] : TFlow(";")) {
-				case TSy(o), TFlow(o): if (o != ")" && o != "]") { // regexp
+				if (n >= 0) switch (r[n]) {
+					case TFlow(o): z = (o != ")".code) && (o != "]".code);
+					default: z = false;
+				} else z = true;
+				if (z) {
 					q = p - 1;
 					while (++p < l && (c = d.charAt(p)) != "/" && CL_NEWLINE.indexOf(c) < 0) {
 						if (c == "\\") p++;
 					}
-					if (CL_NEWLINE.indexOf(c) >= 0) {
+					if (CL_NEWLINE.indexOf(c) >= 0) { // unclosed, is not a regexp
 						r[++n] = TSy("/"); p = q;
 					} else {
 						while (++p < l && CL_ALPHA.indexOf(c = d.charAt(p)) >= 0) { }
 						r[++n] = TRx(d.substring(q, p)); p--;
 					}
 				} else { // not a good place for regular expression
-					r[++n] = TSy("/"); p--;
-				}
-				default:
-					r[++n] = TSy("/"); p--;
+					r[++n] = TSy("/");
+					p--;
 				}
 			}
 		case ".".code:
@@ -134,12 +137,12 @@ class Haxmin {
 					while (++p < l && CL_DIGITS.indexOf(d.charAt(p).toLowerCase()) >= 0) { }
 				}
 				r[++n] = TNu(d.substring(q, p)); p--;
-			} else r[++n] = TFlow(String.fromCharCode(k));
+			} else r[++n] = TFlow(k);
 		case "{".code, "}".code, ";".code, "(".code, ")".code,
 			"[".code, "]".code, "?".code, ":".code, ",".code:
-			r[++n] = TFlow(String.fromCharCode(k));
+			r[++n] = TFlow(k);
 		case "^".code, "~".code, "*".code, "%".code:
-			r[++n] = TSy(String.fromCharCode(k));
+			r[++n] = TSi(k);
 		case "&".code, "|".code, "^".code, "+".code, "-".code:
 			c = String.fromCharCode(k);
 			s = c;
@@ -397,7 +400,7 @@ class Haxmin {
 			} else if ((s == ";" && (sn == "}" || sn == ")"))
 			|| (s == "," && sn == "]")) {
 				// last colon/semicolon before closing bracket is not needed.
-				s = "";
+				s = null;
 			} else {
 				c0 = s.substr(-1);
 				c1 = sn.charAt(0);
@@ -407,13 +410,13 @@ class Haxmin {
 					s += " ";
 				}
 			}
-			if (s == "") continue;
+			if (s == null) continue;
 			b.addSub(s, 0);
 			c += s.length;
 			// linebreaks:
 			if (c >= 8000) switch (ltk) {
 			case TFlow(o):
-				if (o == "}" || o == ";") {
+				if (o == "}".code || o == ";".code) {
 					c = 0;
 					b.addChar(10);
 				}
@@ -426,9 +429,10 @@ class Haxmin {
 		var r = "";
 		if (t == null) return r;
 		switch (t) {
-			case TFlow(o): r = o;
+			case TFlow(o): r = String.fromCharCode(o);
 			case TDot: r = ".";
 			case TSy(o): r = o;
+			case TSi(o): r = String.fromCharCode(o);
 			case TId(o): r = o;
 			case TKw(o): r = o;
 			case TSt(o): r = "\"" + o + "\"";
