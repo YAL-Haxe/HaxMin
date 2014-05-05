@@ -31,6 +31,37 @@ class Haxmin {
 	public static var SL_KEYWORD:Map<String, Bool>;
 	public static var SL_EXCLUDE:Array<String>;
 	//
+	private static inline function isNewline(k:Int) {
+		return k == "\r".code || k == "\n".code;
+	}
+	private static inline function isWhitespace(k:Int) {
+		return k == " ".code || k == "\t".code || k == "\r".code || k == "\n".code;
+	}
+	private static inline function isDigit(k:Int) {
+		return k >= "0".code && k <= "9".code;
+	}
+	private static inline function isNumber(k:Int) {
+		return isDigit(k) || k == ".".code;
+	}
+	private static inline function isHex(k:Int) {
+		return isDigit(k) || (k >= "a".code && k <= "f".code) || (k >= "A".code && k <= "F".code);
+	}
+	private static inline function isLower(k:Int) {
+		return k >= "a".code && k <= "z".code;
+	}
+	private static inline function isUpper(k:Int) {
+		return k >= "A".code && k <= "Z".code;
+	}
+	private static inline function isLetter(k:Int) {
+		return isLower(k) || isUpper(k);
+	}
+	private static inline function isIdent(k:Int) {
+		return isLetter(k) || k == "$".code || k == "_".code;
+	}
+	private static inline function isIdentX(k:Int) {
+		return isIdent(k) || isDigit(k);
+	}
+	//
 	private static function __init__():Void {
 		var i:Int, k:Int, s:String, m:Array<String>;
 		s = ''; i = '0'.code; k = '9'.code; while (i <= k) s += String.fromCharCode(i++);
@@ -112,14 +143,16 @@ class Haxmin {
 			default:
 				if (n >= 0) switch (r[n]) {
 					case TFlow(o): z = (o != ")".code) && (o != "]".code);
+					case TSy(_): z = true;
+					case TSi(_): z = true;
 					default: z = false;
 				} else z = true;
 				if (z) {
 					q = p - 1;
-					while (++p < l && (c = d.charAt(p)) != "/" && CL_NEWLINE.indexOf(c) < 0) {
-						if (c == "\\") p++;
+					while (++p < l && (k = d.charCodeAt(p)) != "/".code && !isNewline(k)) {
+						if (k == "\\".code) p++;
 					}
-					if (CL_NEWLINE.indexOf(c) >= 0) { // unclosed, is not a regexp
+					if (isNewline(k)) { // unclosed, is not a regexp
 						r[++n] = TSy("/"); p = q;
 					} else {
 						while (++p < l && CL_ALPHA.indexOf(c = d.charAt(p)) >= 0) { }
@@ -177,16 +210,15 @@ class Haxmin {
 			while (++p < l && (i = d.charCodeAt(p)) != k) if (i == "\\".code) p++;
 			r[++n] = TSt(d.substring(q, p));
 		default:
-			c = String.fromCharCode(k);
-			if (CL_IDENT.indexOf(c) >= 0) { // id/keyword
-				q = p; while (++p < l && CL_IDENTX.indexOf(c = d.charAt(p)) >= 0) { }
+			if (isIdent(k)) { // id/keyword
+				q = p; while (++p < l && isIdentX(d.charCodeAt(p))) { }
 				r[++n] = SL_KEYWORD.exists(s = d.substring(q, p)) ? TKw(s) : TId(s); p--;
-			} else if (CL_NUMBER.indexOf(c) >= 0) { // number
-				q = p; while (++p < l && CL_NUMBER.indexOf(c = d.charAt(p)) >= 0) { }
-				if (c == "e") {
-					while (++p < l && CL_DIGITS.indexOf(d.charAt(p).toLowerCase()) >= 0) { }
-				} else if (c == "x" && p == q + 1) {
-					while (++p < l && CL_DIGHEX.indexOf(d.charAt(p).toLowerCase()) >= 0) { }
+			} else if (isNumber(k)) { // number
+				q = p; while (++p < l && isNumber(k = d.charCodeAt(p))) { }
+				if (k == "e".code) {
+					while (++p < l && isDigit(d.charCodeAt(p))) { }
+				} else if (k == "x".code && p == q + 1) {
+					while (++p < l && isHex(d.charCodeAt(p))) { }
 				}
 				r[++n] = TNu(d.substring(q, p)); p--;
 			}
@@ -210,6 +242,7 @@ class Haxmin {
 			mi:Int, mc:Int, ms:String, s:String, tk:Token, z:Bool, w:Bool;
 		i = -1; l = exlist.length; while (++i < l) exclude.set(exlist[i], true);
 		for (k in SL_KEYWORD.keys()) exclude.set(k, true);
+		trace(SL_EXCLUDE);
 		i = -1; l = SL_EXCLUDE.length; while (++i < l) exclude.set(SL_EXCLUDE[i], true);
 		// first round - only identifiers
 		i = -1; l = list.length; while (++i < l) switch (list[i]) {
