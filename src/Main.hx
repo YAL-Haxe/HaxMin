@@ -1,6 +1,7 @@
 package ;
 
 import haxe.io.Path;
+import haxe.Timer;
 import neko.Lib;
 import sys.FileSystem;
 import sys.io.File;
@@ -69,17 +70,32 @@ class Main {
 		var size0:Int, size1:Int;
 		var src:String = sys.io.File.getContent(path0);
 		Lib.println("Source is " + getSizeString(size0 = src.length));
-		Lib.println("Seeking...");
+		var time0:Float = Timer.stamp(), time1:Float;
+		//
+		Lib.print("Seeking...");
 		var tks = Haxmin.parse(src);
 		//
+		time1 = Timer.stamp();
+		Lib.println(" " + Std.int((time1 - time0) * 1000) + "ms");
+		time0 = time1;
+		//
 		if (shouldRename) {
-			Lib.println("Renaming...");
+			Lib.print("Renaming...");
 			Haxmin.rename(tks, [], debugRename, renameInStrings);
+			//
+			time1 = Timer.stamp();
+			Lib.println(" " + Std.int((time1 - time0) * 1000) + "ms");
+			time0 = time1;
 		}
-		Lib.println("Printing...");
+		Lib.print("Printing...");
 		src = Haxmin.print(tks);
+		//
+		time1 = Timer.stamp();
+		Lib.println(" " + Std.int((time1 - time0) * 1000) + "ms");
+		time0 = time1;
+		//
 		Lib.println("Minified" + (shouldRename ? "+renamed" : "")
-		+ "is " + getSizeString(size1 = src.length)
+		+ " is " + getSizeString(size1 = src.length)
 		+ "(" + Std.int(size1 / size0 * 100) + "%)");
 		Lib.println("Saving...");
 		if (FileSystem.exists(path1)) FileSystem.deleteFile(path1);
