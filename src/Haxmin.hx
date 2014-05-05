@@ -89,6 +89,7 @@ class Haxmin {
 			"setUTCMilliseconds", "setUTCMonth", "setUTCSeconds", "setYear", "toDateString",
 			"toGMTString", "toISOString", "toJSON", "toLocaleDateString", "toLocaleString",
 			"toLocaleTimeString", "toUTCString",
+		"escape", "unescape", "copy", "delete", "eval", "keys", 
 		// Haxe-specific:
 		"node", "get_", "set_",
 		];
