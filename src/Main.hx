@@ -64,7 +64,7 @@ class Main {
 			// load exclusion list from file
 			var lines = File.getContent(p).split("\n");
 			Lib.println("Loading list from " + p + "...");
-			for (line in lines) Haxmin.SL_EXCLUDE.push(line);
+			for (line in lines) Haxmin.SL_EXCLUDE.push(StringTools.trim(line));
 		} catch (e:Dynamic) { Lib.println("Failed to load from " + p); }
 		//
 		var size0:Int, size1:Int;
