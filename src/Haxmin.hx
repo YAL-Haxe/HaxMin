@@ -95,13 +95,15 @@ class Haxmin {
 	}
 	/// parses a string into array of tokens
 	public static function parse(d:String):Array<Token> {
-		var p:Int = -1, q:Int, l:Int = d.length, c:String, s:String,
+		var p:Int = -1, q:Int, l:Int = d.length,
+			c:String, s:String,
+			k:Int, i:Int,
 			r:Array<Token> = [], n:Int = -1;
-		while (++p < l) switch (c = d.charAt(p)) {
-		case "/": switch (c = d.charAt(++p)) {
-			case "/": // "//"
+		while (++p < l) switch (k = d.charCodeAt(p)) {
+		case "/".code: switch (k = d.charCodeAt(++p)) {
+			case "/".code: // "//"
 				while (++p < l && (CL_NEWLINE.indexOf(c = d.charAt(p)) < 0)) { }
-			case "*":
+			case "*".code: // "/* */"
 				while (++p < l && (d.substr(p, 2) != "*/")) { }
 				p++;
 			default:
@@ -124,25 +126,28 @@ class Haxmin {
 					r[++n] = TSy("/"); p--;
 				}
 			}
-		case ".":
+		case ".".code:
 			if (CL_DIGITS.indexOf(d.charAt(p + 1)) >= 0) {
 				q = p; while (++p < l && CL_NUMBER.indexOf(c = d.charAt(p)) >= 0) { }
 				if (c == "e") {
 					while (++p < l && CL_DIGITS.indexOf(d.charAt(p).toLowerCase()) >= 0) { }
 				}
 				r[++n] = TNu(d.substring(q, p)); p--;
-			} else r[++n] = TFlow(c);
-		case "{", "}", ";", "(", ")", "[", "]", "?", ":", ",":
-			r[++n] = TFlow(c);
-		case "^", "~", "*", "%":
-			r[++n] = TSy(c);
-		case "&", "|", "^", "+", "-":
+			} else r[++n] = TFlow(String.fromCharCode(k));
+		case "{".code, "}".code, ";".code, "(".code, ")".code,
+			"[".code, "]".code, "?".code, ":".code, ",".code:
+			r[++n] = TFlow(String.fromCharCode(k));
+		case "^".code, "~".code, "*".code, "%".code:
+			r[++n] = TSy(String.fromCharCode(k));
+		case "&".code, "|".code, "^".code, "+".code, "-".code:
+			c = String.fromCharCode(k);
 			s = c;
 			if (d.charAt(++p) == c) {
 				s += c;
 			} else p--;
 			r[++n] = TSy(s);
-		case "!", "=":
+		case "!".code, "=".code:
+			c = String.fromCharCode(k);
 			s = c;
 			if (d.charAt(++p) == "=") {
 				s += "=";
@@ -151,7 +156,8 @@ class Haxmin {
 				} else p--;
 			} else p--;
 			r[++n] = TSy(s);
-		case "<", ">":
+		case "<".code, ">".code:
+			c = String.fromCharCode(k);
 			s = c;
 			switch (c = d.charAt(++p)) {
 			case "=", "<", ">":
@@ -162,11 +168,12 @@ class Haxmin {
 			default: p--;
 			}
 			r[++n] = TSy(s);
-		case "'", "\"":
+		case "'".code, "\"".code:
 			q = p + 1;
-			while (++p < l && (s = d.charAt(p)) != c) if (s == "\\") p++;
+			while (++p < l && (i = d.charCodeAt(p)) != k) if (i == "\\".code) p++;
 			r[++n] = TSt(d.substring(q, p));
 		default:
+			c = String.fromCharCode(k);
 			if (CL_IDENT.indexOf(c) >= 0) { // id/keyword
 				q = p; while (++p < l && CL_IDENTX.indexOf(c = d.charAt(p)) >= 0) { }
 				r[++n] = SL_KEYWORD.exists(s = d.substring(q, p)) ? TKw(s) : TId(s); p--;
