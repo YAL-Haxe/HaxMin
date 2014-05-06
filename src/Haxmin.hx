@@ -141,8 +141,10 @@ class Haxmin {
 			k:Int, i:Int,
 			z:Bool,
 			r:Array<Token> = [], n:Int = -1;
-		while (++p < l) switch (k = d.charCodeAt(p)) {
-		case "/".code: switch (k = d.charCodeAt(++p)) {
+		inline function char():Int return StringTools.fastCodeAt(d, p);
+		inline function next():Int return StringTools.fastCodeAt(d, ++p);
+		while (++p < l) switch (k = char()) {
+		case "/".code: switch (k = next()) {
 			case "/".code: // "//"
 				while (++p < l && (CL_NEWLINE.indexOf(c = d.charAt(p)) < 0)) { }
 			case "*".code: // "/* */"
@@ -215,21 +217,21 @@ class Haxmin {
 			r[++n] = TSy(s);
 		case "'".code, "\"".code:
 			q = p + 1;
-			while (++p < l && (i = d.charCodeAt(p)) != k) if (i == "\\".code) p++;
+			while (++p < l && (i = char()) != k) if (i == "\\".code) p++;
 			r[++n] = TSt(d.substring(q, p));
 		default:
 			if (isIdent(k)) { // id/keyword
-				q = p; while (++p < l && isIdentX(d.charCodeAt(p))) { }
+				q = p; while (++p < l && isIdentX(char())) { }
 				r[++n] = SL_KEYWORD.exists(s = d.substring(q, p))
 					? TKw(SL_KEYWORD.get(s))
 					: TId(s);
 				p--;
 			} else if (isNumber(k)) { // number
-				q = p; while (++p < l && isNumber(k = d.charCodeAt(p))) { }
+				q = p; while (++p < l && isNumber(k = char())) { }
 				if (k == "e".code) {
-					while (++p < l && isDigit(d.charCodeAt(p))) { }
+					while (++p < l && isDigit(char())) { }
 				} else if (k == "x".code && p == q + 1) {
-					while (++p < l && isHex(d.charCodeAt(p))) { }
+					while (++p < l && isHex(char())) { }
 				}
 				r[++n] = TNu(d.substring(q, p)); p--;
 			}
@@ -519,4 +521,8 @@ class Haxmin {
 		return r;
 	}
 	///
+}
+
+class OddHash {
+	
 }
