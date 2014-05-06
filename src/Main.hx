@@ -29,9 +29,9 @@ class Main {
 			Lib.println("Usage: haxmin [source file] [destination file] [exclusion files...]");
 			Lib.println("...or: haxmin [path] [exclusion list file]");
 			Lib.println("Supported flags:");
-			Lib.println("-nr/-norename: Disable identifier renaming");
-			Lib.println("-ns/-nostring: Don't rename identifiers in strings");
-			Lib.println("-dr/-debugrename: Prefixes identifiers with a $ symbol instead of renaming."
+			Lib.println("/nr, /norename: Disable identifier renaming");
+			Lib.println("/ns, /nostring: Don't rename identifiers in strings");
+			Lib.println("/dr, /debugrename: Prefixes identifiers with a $ symbol instead of renaming."
 			+ "Use this flag to debug issues with application going defunct after renaming.");
 			Sys.exit(1);
 		}
