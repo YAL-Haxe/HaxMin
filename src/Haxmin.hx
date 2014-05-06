@@ -372,10 +372,10 @@ class Haxmin {
 		// apply changes!
 		i = -1; l = list.length; while (++i < l) switch (tk = list[i]) {
 		case TId(o), TSt(o):
-			s = o.substr(0, 4);
-			z = (s == "get_" || s == "set_");
-			if (z) {
-				s = (s == "get_" ? rget : rset)
+			if (o.length >= 4 && o.charCodeAt(3) == "_".code
+			&& ((j = o.charCodeAt(0)) == "g".code || j == "s".code)
+			&& o.charCodeAt(1) == "e".code && o.charCodeAt(2) == "t".code) {
+				s = (j == "g".code ? rget : rset)
 					+ (changes.exists(s = o.substr(4)) ? changes.get(s) : s);
 				switch (tk) {
 				case TId(_): list[i] = TId(s);
