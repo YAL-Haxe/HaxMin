@@ -11,7 +11,7 @@ enum Token {
 	TSy(o:String); // {[(...
 	TSi(o:Int); // A single symbol
 	TId(o:String); // identifier
-	TKw(o:String); // for/while/etc.
+	TKw(o:Int); // for/while/etc.
 	TSt(o:String); // "string"
 	TNu(o:String); // 0.0
 	TRx(o:String); // /magic/
@@ -28,7 +28,11 @@ class Haxmin {
 	public static var CL_IDENT:String;
 	public static var CL_IDENTX:String;
 	//
-	public static var SL_KEYWORD:Map<String, Bool>;
+	private static var SM_KEYWORD:Array<String>;
+	private static var SL_KEYWORD:Map<String, Int>;
+	private static var keywordElse:Int;
+	private static var keywordWhile:Int;
+	private static var keywordCatch:Int;
 	public static var SL_EXCLUDE:Array<String>;
 	//
 	private static inline function isNewline(k:Int) {
@@ -82,7 +86,11 @@ class Haxmin {
 			"else", "false", "finally", "for", "function", "goto", "if", "in", "instanceof", "new",
 			"null", "return", "switch", "this", "throw", "true", "try", "typeof", "undefined", "var",
 			"with", "while"];
-		i = 0; k = m.length; while (i < k) SL_KEYWORD.set(m[i++], true);
+		i = -1; k = m.length; while (++i < k) SL_KEYWORD.set(m[i], i);
+		SM_KEYWORD = m;
+		keywordElse = SL_KEYWORD.get("else");
+		keywordCatch = SL_KEYWORD.get("catch");
+		keywordWhile = SL_KEYWORD.get("while");
 		// basic exclusion list:
 		SL_EXCLUDE = [
 		// console and tracing:
@@ -212,7 +220,10 @@ class Haxmin {
 		default:
 			if (isIdent(k)) { // id/keyword
 				q = p; while (++p < l && isIdentX(d.charCodeAt(p))) { }
-				r[++n] = SL_KEYWORD.exists(s = d.substring(q, p)) ? TKw(s) : TId(s); p--;
+				r[++n] = SL_KEYWORD.exists(s = d.substring(q, p))
+					? TKw(SL_KEYWORD.get(s))
+					: TId(s);
+				p--;
 			} else if (isNumber(k)) { // number
 				q = p; while (++p < l && isNumber(k = d.charCodeAt(p))) { }
 				if (k == "e".code) {
@@ -422,30 +433,50 @@ class Haxmin {
 			i:Int = -1, l:Int = list.length, // iterators
 			s:String, sn:String = "", // string/next string
 			c0:String = "", c1:String,
+			k0:Int, k1:Int,
 			xc:Int, // extra character
 			c:Int = 0, // counter
-			tk:Token = null, ltk:Token; // token/last token
+			tk:Token = TFlow(" ".code), ltk:Token, // token/last token
+			kwElse = keywordElse,
+			kwWhile = keywordWhile,
+			kwCatch = keywordCatch;
 		while (++i <= l) {
 			xc = 0;
-			s = sn; ltk = tk;
-			sn = tkString(tk = list[i]);
+			ltk = tk;
+			s = sn; sn = tkString(tk = list[i]);
 			// micro-optimizations and fixes:
-			if (s == "}" && CL_IDENTX.indexOf(sn.charAt(0)) >= 0
-			&& sn != "catch" && sn != "else" && sn != "while") {
-				// add a semicolon after curly brackets, unless they're part of control statements.
-				xc = ";".code;
-			} else if ((s == ";" && (sn == "}" || sn == ")"))
-			|| (s == "," && sn == "]")) {
-				// last colon/semicolon before closing bracket is not needed.
-				s = null;
-			} else {
-				c0 = s.substr(-1);
-				c1 = sn.charAt(0);
-				if ((CL_IDENTX.indexOf(c0) >= 0 && CL_IDENTX.indexOf(c1) >= 0)
-				|| ((c0 == "+" || c0 == "-") && (c1 == "+" || c1 == "-"))) {
-					// "i+++++j" would not exactly work, despite the ease of parsing that right.
-					xc = " ".code;
+			if (tk != null) switch (tk) {
+			case TId(_), TNu(_): switch (ltk) {
+				case TId(_): xc = " ".code;
+				case TKw(_): xc = " ".code;
+				case TNu(_): xc = " ".code;
+				default:
 				}
+			case TKw(kw): switch (ltk) {
+				case TFlow(fc): if (fc == "}".code && kw != kwElse
+				&& kw != kwWhile && kw != kwCatch) xc = ";".code;
+				case TKw(_): xc = " ".code;
+				case TId(_), TNu(_): xc = " ".code;
+				default:
+				}
+			case TFlow(fc):
+				if (fc == "}".code) switch (ltk) {
+				case TFlow(fp): if (fp == ";".code) s = null;
+				default:
+				} else if (fc == "]".code) switch (ltk) {
+				case TFlow(fp): if (fp == ",".code) s = null;
+				default:
+				}
+			case TSy(s): switch (ltk) {
+				case TSy(sp):
+					k0 = sp.charCodeAt(sp.length - 1);
+					k1 = s.charCodeAt(0);
+					if ((k0 == "+".code || k0 == "-".code) && (k1 == "+".code || k1 == "-".code)) {
+						xc = " ".code;
+					}
+				default:
+				}
+			default:
 			}
 			if (s == null) continue;
 			b.addSub(s, 0);
@@ -472,7 +503,7 @@ class Haxmin {
 			case TSy(o): r = o;
 			case TSi(o): r = String.fromCharCode(o);
 			case TId(o): r = o;
-			case TKw(o): r = o;
+			case TKw(o): r = SM_KEYWORD[o];
 			case TSt(o): r = "\"" + o + "\"";
 			case TNu(o): r = o;
 			case TRx(o): r = o;
