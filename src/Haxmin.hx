@@ -257,12 +257,15 @@ class Haxmin {
 		// first round - only identifiers
 		i = -1; l = list.length; while (++i < l) switch (list[i]) {
 		case TId(o):
-			s = o.substr(0, 4);
-			if (s == "get_") {
-				refCount.set("get_", refCount.exists("get_") ? refCount.get("get_") + 1 : 1);
-				o = o.substr(4);
-			} else if (s == "set_") {
-				refCount.set("set_", refCount.exists("set_") ? refCount.get("set_") + 1 : 1);
+			// Starts with "get_"/"set_":
+			if (o.length >= 4 && o.charCodeAt(3) == "_".code
+			&& ((j = o.charCodeAt(0)) == "g".code || j == "s".code)
+			&& o.charCodeAt(1) == "e".code && o.charCodeAt(2) == "t".code) {
+				if (j == "g".code) {
+					refCount.set("get_", refCount.exists("get_") ? refCount.get("get_") + 1 : 1);
+				} else {
+					refCount.set("set_", refCount.exists("set_") ? refCount.get("set_") + 1 : 1);
+				}
 				o = o.substr(4);
 			}
 			//
@@ -274,12 +277,15 @@ class Haxmin {
 		// second round - search in strings
 		i = -1; if (ns) while (++i < l) switch (list[i]) {
 		case TSt(o):
-			s = o.substr(0, 4);
-			if (s == "get_") {
-				refCount.set("get_", refCount.exists("get_") ? refCount.get("get_") + 1 : 1);
-				o = o.substr(4);
-			} else if (s == "set_") {
-				refCount.set("set_", refCount.exists("set_") ? refCount.get("set_") + 1 : 1);
+			// Starts with "get_"/"set_":
+			if (o.length >= 4 && o.charCodeAt(3) == "_".code
+			&& ((j = o.charCodeAt(0)) == "g".code || j == "s".code)
+			&& o.charCodeAt(1) == "e".code && o.charCodeAt(2) == "t".code) {
+				if (j == "g".code) {
+					refCount.set("get_", refCount.exists("get_") ? refCount.get("get_") + 1 : 1);
+				} else {
+					refCount.set("set_", refCount.exists("set_") ? refCount.get("set_") + 1 : 1);
+				}
 				o = o.substr(4);
 			}
 			if (refCount.exists(o)) refCount.set(o, refCount.get(o) + 1);
@@ -344,8 +350,8 @@ class Haxmin {
 				s = "";
 				j = 0; while (j <= nx1) s += CL_IDENTX.charAt(next[j++]);
 			} while (exclude.exists(s)
-			|| s.substr(0, rget.length) == rget
-			|| s.substr(0, rset.length) == rset);
+			|| s.indexOf(rget) == 0
+			|| s.indexOf(rset) == 0);
 			refGen.push(s);
 		} else while (++i < l) {
 			s = refOrder[i];
@@ -372,6 +378,7 @@ class Haxmin {
 		// apply changes!
 		i = -1; l = list.length; while (++i < l) switch (tk = list[i]) {
 		case TId(o), TSt(o):
+			// Starts with "get_"/"set_":
 			if (o.length >= 4 && o.charCodeAt(3) == "_".code
 			&& ((j = o.charCodeAt(0)) == "g".code || j == "s".code)
 			&& o.charCodeAt(1) == "e".code && o.charCodeAt(2) == "t".code) {
