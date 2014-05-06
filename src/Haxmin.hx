@@ -251,10 +251,11 @@ class Haxmin {
 			il1:Int = CL_IDENT.length, ilx:Int = CL_IDENTX.length,
 			i:Int, l:Int, j:Int, c:Int,
 			mi:Int, mc:Int, ms:String, s:String, tk:Token, z:Bool, w:Bool;
+		// Form hashmap of keywords:
 		i = -1; l = exlist.length; while (++i < l) exclude.set(exlist[i], true);
 		for (k in SL_KEYWORD.keys()) exclude.set(k, true);
 		i = -1; l = SL_EXCLUDE.length; while (++i < l) exclude.set(SL_EXCLUDE[i], true);
-		// first round - only identifiers
+		// Count up occurences of identifiers:
 		i = -1; l = list.length; while (++i < l) switch (list[i]) {
 		case TId(o):
 			// Starts with "get_"/"set_":
@@ -274,7 +275,7 @@ class Haxmin {
 			}
 		default:
 		}
-		// second round - search in strings
+		// Count up occurences in strings (if flag is set):
 		i = -1; if (ns) while (++i < l) switch (list[i]) {
 		case TSt(o):
 			// Starts with "get_"/"set_":
@@ -291,13 +292,13 @@ class Haxmin {
 			if (refCount.exists(o)) refCount.set(o, refCount.get(o) + 1);
 		default:
 		}
-		// sort these:
+		// Sort identifiers in order of frequency of appearance (most used go first):
 		l = 0; for (k in refCount.keys()) {
 			refKeys.push(k);
 			refVals.push(refCount.get(k));
 			l++;
 		}
-		while (l > 0) {
+		while (l > 0) { // (mysteriously, this performs better than bubble sort)
 			i = -1;
 			mi = -1; mc = 0;
 			while (++i < l) if ((c = refVals[i]) > mc) {
@@ -353,7 +354,7 @@ class Haxmin {
 			|| s.indexOf(rget) == 0
 			|| s.indexOf(rset) == 0);
 			refGen.push(s);
-		} else while (++i < l) {
+		} else while (++i < l) { // debug renaming (prefix everything with "$")
 			s = refOrder[i];
 			if (s == "get_" || s == "set_") {
 				refOrder.splice(i--, 1);
