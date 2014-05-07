@@ -1,20 +1,24 @@
 package ;
+import haxe.Timer;
 
 /**
  * ...
  * @author YellowAfterlife
  */
-//
+/**
+ * Token types.
+ * `kind` here indicates 0 for normal, and 1/-1 for get_/set_ prefix accordingly.
+ */
 enum Token {
 	TFlow(o:Int); // ;
 	TDot; // .
-	TSy(o:String); // {[(...
+	TSy(o:SubString); // {[(...
 	TSi(o:Int); // A single symbol
-	TId(o:String); // identifier
+	TId(o:SubString, kind:Int); // identifier
 	TKw(o:Int); // for/while/etc.
-	TSt(o:String); // "string"
-	TNu(o:String); // 0.0
-	TRx(o:String); // /magic/
+	TSt(o:SubString, kind:Int); // "string"
+	TNu(o:SubString); // 0.0
+	TRx(o:SubString); // /magic/
 }
 class Haxmin {
 	public static var CL_NEWLINE:String = "\r\n";
@@ -29,7 +33,7 @@ class Haxmin {
 	public static var CL_IDENTX:String;
 	//
 	private static var SM_KEYWORD:Array<String>;
-	private static var SL_KEYWORD:Map<String, Int>;
+	private static var SL_KEYWORD:StringLessMap<Int>;
 	private static var keywordElse:Int;
 	private static var keywordWhile:Int;
 	private static var keywordCatch:Int;
@@ -81,7 +85,7 @@ class Haxmin {
 		CL_IDENT = "$_" + CL_ALPHA;
 		CL_IDENTX = CL_IDENT + CL_DIGITS;
 		//
-		SL_KEYWORD = new Map();
+		SL_KEYWORD = new StringLessMap();
 		m = ["abstract", "break", "case", "catch", "continue", "default", "delete", "do", "each",
 			"else", "false", "finally", "for", "function", "goto", "if", "in", "instanceof", "new",
 			"null", "return", "switch", "this", "throw", "true", "try", "typeof", "undefined", "var",
@@ -139,7 +143,7 @@ class Haxmin {
 		var p:Int = -1, q:Int, l:Int = d.length,
 			c:String, s:String,
 			k:Int, i:Int,
-			z:Bool,
+			z:Bool, o:SubString,
 			r:Array<Token> = [], n:Int = -1;
 		inline function char():Int return StringTools.fastCodeAt(d, p);
 		inline function next():Int return StringTools.fastCodeAt(d, ++p);
@@ -163,13 +167,13 @@ class Haxmin {
 						if (k == "\\".code) p++;
 					}
 					if (isNewline(k)) { // unclosed, is not a regexp
-						r[++n] = TSy("/"); p = q;
+						r[++n] = TSy(new SubString(d, q, 1)); p = q;
 					} else {
 						while (++p < l && CL_ALPHA.indexOf(c = d.charAt(p)) >= 0) { }
-						r[++n] = TRx(d.substring(q, p)); p--;
+						r[++n] = TRx(new SubString(d, q, p - q)); p--;
 					}
 				} else { // not a good place for regular expression
-					r[++n] = TSy("/");
+					r[++n] = TSy(new SubString(d, p - 1, 1));
 					p--;
 				}
 			}
@@ -179,7 +183,7 @@ class Haxmin {
 				if (c == "e") {
 					while (++p < l && CL_DIGITS.indexOf(d.charAt(p).toLowerCase()) >= 0) { }
 				}
-				r[++n] = TNu(d.substring(q, p)); p--;
+				r[++n] = TNu(new SubString(d, q, p - q)); p--;
 			} else r[++n] = TFlow(k);
 		case "{".code, "}".code, ";".code, "(".code, ")".code,
 			"[".code, "]".code, "?".code, ":".code, ",".code:
@@ -187,44 +191,39 @@ class Haxmin {
 		case "^".code, "~".code, "*".code, "%".code:
 			r[++n] = TSi(k);
 		case "&".code, "|".code, "^".code, "+".code, "-".code:
-			c = String.fromCharCode(k);
-			s = c;
-			if (d.charAt(++p) == c) {
-				s += c;
-			} else p--;
-			r[++n] = TSy(s);
-		case "!".code, "=".code:
-			c = String.fromCharCode(k);
-			s = c;
-			if (d.charAt(++p) == "=") {
-				s += "=";
-				if (d.charAt(++p) == "=") {
-					s += "=";
-				} else p--;
-			} else p--;
-			r[++n] = TSy(s);
-		case "<".code, ">".code:
-			c = String.fromCharCode(k);
-			s = c;
-			switch (c = d.charAt(++p)) {
-			case "=", "<", ">":
-				s += c;
-				if (s == ">>" && c == ">") {
-					if ((c = d.charAt(++p)) == ">") s += c; else p--;
-				}
-			default: p--;
+			q = p;
+			if (next() == k) {
+				r[++n] = TSy(new SubString(d, q, 2));
+			} else {
+				p--;
+				r[++n] = TSy(new SubString(d, q, 1));
 			}
-			r[++n] = TSy(s);
+		case "!".code, "=".code:
+			// `!`, `!=`, `!==`
+			q = p;
+			if (next() == "=".code) {
+				if (next() != "=".code) p--;
+			} else p--;
+			r[++n] = TSy(new SubString(d, q, p - q + 1));
+		case "<".code, ">".code:
+			// `<`, `>`, `<<`, `>>`, `>>>`
+			q = p;
+			k = next();
+			if (k == ">".code) {
+				if (next() != ">".code) p--;
+			} else if (k != "=".code && k != "<".code) p--;
+			r[++n] = TSy(new SubString(d, q, p - q + 1));
 		case "'".code, "\"".code:
 			q = p + 1;
 			while (++p < l && (i = char()) != k) if (i == "\\".code) p++;
-			r[++n] = TSt(d.substring(q, p));
+			o = new SubString(d, q, p - q);
+			r[++n] = TSt(o, o.prefix());
 		default:
 			if (isIdent(k)) { // id/keyword
 				q = p; while (++p < l && isIdentX(char())) { }
-				r[++n] = SL_KEYWORD.exists(s = d.substring(q, p))
-					? TKw(SL_KEYWORD.get(s))
-					: TId(s);
+				k = SL_KEYWORD.get(d, q, p - q);
+				r[++n] = k != null ? TKw(k)
+					: TId(o = new SubString(d, q, p - q), o.prefix());
 				p--;
 			} else if (isNumber(k)) { // number
 				q = p; while (++p < l && isNumber(k = char())) { }
@@ -233,16 +232,16 @@ class Haxmin {
 				} else if (k == "x".code && p == q + 1) {
 					while (++p < l && isHex(char())) { }
 				}
-				r[++n] = TNu(d.substring(q, p)); p--;
+				r[++n] = TNu(new SubString(d, q, p - q)); p--;
 			}
 		}
 		return r;
 	}
 	///
 	public static function rename(list:Array<Token>, exlist:Array<String>, debug:Bool, ns:Bool = true):Void {
-		var refCount:Map<String, Int> = new Map(),
-			exclude:Map<String, Bool> = new Map(),
-			changes:Map<String, String> = new Map(),
+		var refCount:StringLessIntMap = new StringLessIntMap(),
+			exclude:StringLessMap<Bool> = new StringLessMap(),
+			changes:StringLessMap<String> = new StringLessMap(),
 			refKeys:Array<String> = [], // keys of refCount
 			refVals:Array<Int> = [], // values of refCount
 			refOrder:Array<String> = [], // top-to-bottom sorted order of names
@@ -251,67 +250,56 @@ class Haxmin {
 			nx1:Int = 0, // next.length - 1
 			rget:String = "get_", rset:String = "set_", // renamed get_\set_
 			il1:Int = CL_IDENT.length, ilx:Int = CL_IDENTX.length,
-			i:Int, l:Int, j:Int, c:Int,
+			i:Int, l:Int, j:Int, c:Int, k:Int, q:SubString,
 			mi:Int, mc:Int, ms:String, s:String, tk:Token, z:Bool, w:Bool;
+		// Profiling... kind of.
+		#if haxmin_logtimes
+		var t0:Float = Timer.stamp(), t1:Float;
+		#end
+		inline function section(name:String) {
+			#if haxmin_logtimes
+			t1 = Timer.stamp();
+			trace(name + ": " + Std.int((t1 - t0) * 1000) + "ms");
+			t0 = t1;
+			#end
+		}
 		// Form hashmap of keywords:
 		i = -1; l = exlist.length; while (++i < l) exclude.set(exlist[i], true);
-		for (k in SL_KEYWORD.keys()) exclude.set(k, true);
-		i = -1; l = SL_EXCLUDE.length; while (++i < l) exclude.set(SL_EXCLUDE[i], true);
+		for (k in SM_KEYWORD) exclude.set(k, true);
+		for (k in SL_EXCLUDE) exclude.set(k, true);
+		l = list.length;
+		section("hash");
 		// Count up occurences of identifiers:
-		i = -1; l = list.length; while (++i < l) switch (list[i]) {
-		case TId(o):
-			// Starts with "get_"/"set_":
-			if (o.length >= 4 && o.charCodeAt(3) == "_".code
-			&& ((j = o.charCodeAt(0)) == "g".code || j == "s".code)
-			&& o.charCodeAt(1) == "e".code && o.charCodeAt(2) == "t".code) {
-				if (j == "g".code) {
-					refCount.set("get_", refCount.exists("get_") ? refCount.get("get_") + 1 : 1);
-				} else {
-					refCount.set("set_", refCount.exists("set_") ? refCount.get("set_") + 1 : 1);
-				}
-				o = o.substr(4);
-			}
-			//
-			if (!exclude.exists(o)) {
-				refCount.set(o, refCount.exists(o) ? refCount.get(o) + 1 : 1);
+		i = -1; while (++i < l) switch (list[i]) {
+		case TId(o, t):
+			if (t != 0) refCount.add(t > 0 ? "get_" : "set_", 1);
+			if (!exclude.subGet(o)) {
+				refCount.subAdd(o, 1);
 			}
 		default:
 		}
+		section("refCount");
 		// Count up occurences in strings (if flag is set):
 		i = -1; if (ns) while (++i < l) switch (list[i]) {
-		case TSt(o):
-			// Starts with "get_"/"set_":
-			if (o.length >= 4 && o.charCodeAt(3) == "_".code
-			&& ((j = o.charCodeAt(0)) == "g".code || j == "s".code)
-			&& o.charCodeAt(1) == "e".code && o.charCodeAt(2) == "t".code) {
-				if (j == "g".code) {
-					refCount.set("get_", refCount.exists("get_") ? refCount.get("get_") + 1 : 1);
-				} else {
-					refCount.set("set_", refCount.exists("set_") ? refCount.get("set_") + 1 : 1);
-				}
-				o = o.substr(4);
-			}
-			if (refCount.exists(o)) refCount.set(o, refCount.get(o) + 1);
+		case TSt(o, t):
+			if (t != 0) refCount.add(t > 0 ? "get_" : "set_", 1);
+			refCount.subAddx(o, 1);
 		default:
 		}
+		section("strCount");
 		// Sort identifiers in order of frequency of appearance (most used go first):
-		l = 0; for (k in refCount.keys()) {
-			refKeys.push(k);
-			refVals.push(refCount.get(k));
+		var refPairs:Array<{ k: String, v: Int }> = [];
+		l = 0; refCount.forEach(function(k, v) {
+			refPairs.push( { k: k, v: v } );
 			l++;
-		}
-		while (l > 0) { // (mysteriously, this performs better than bubble sort)
-			i = -1;
-			mi = -1; mc = 0;
-			while (++i < l) if ((c = refVals[i]) > mc) {
-				mc = c;
-				mi = i;
-			}
-			refOrder.push(refKeys[mi]);
-			refKeys.splice(mi, 1);
-			refVals.splice(mi, 1);
-			l--;
-		}
+		});
+		section("preSort");
+		refPairs.sort(function(a, b) {
+			return a.v - b.v;
+		});
+		section("sort");
+		for (o in refPairs) refOrder.push(o.k);
+		section("postSort");
 		// generate get_/set_ remaps:
 		if (!debug) {
 			if (Math.random() < 0.5) {
@@ -328,6 +316,7 @@ class Haxmin {
 				} while (rset == rget);
 			}
 		}
+		section("getset");
 		// find new names:
 		i = -1; l = refOrder.length;
 		if (!debug) while (++i < l) {
@@ -352,7 +341,7 @@ class Haxmin {
 				} while (true);
 				s = "";
 				j = 0; while (j <= nx1) s += CL_IDENTX.charAt(next[j++]);
-			} while (exclude.exists(s)
+			} while (exclude.get(s)
 			|| s.indexOf(rget) == 0
 			|| s.indexOf(rset) == 0);
 			refGen.push(s);
@@ -364,6 +353,7 @@ class Haxmin {
 				continue;
 			} else refGen.push("$" + s);
 		}
+		section("genNames");
 		// just renaming identifiers is not enough. let's shuffle them.
 		mi = 0; mc = il1; c = 1;
 		if (mc > l) mc = l;
@@ -380,55 +370,48 @@ class Haxmin {
 		i = -1; while (++i < l) changes.set(refOrder[i], refGen[i]);
 		// apply changes!
 		i = -1; l = list.length; while (++i < l) switch (tk = list[i]) {
-		case TId(o), TSt(o):
-			// Starts with "get_"/"set_":
-			if (o.length >= 4 && o.charCodeAt(3) == "_".code
-			&& ((j = o.charCodeAt(0)) == "g".code || j == "s".code)
-			&& o.charCodeAt(1) == "e".code && o.charCodeAt(2) == "t".code) {
-				s = (j == "g".code ? rget : rset)
-					+ (changes.exists(s = o.substr(4)) ? changes.get(s) : s);
-				switch (tk) {
-				case TId(_): list[i] = TId(s);
-				default: if (ns) list[i] = TSt(s);
+		case TId(o, t):
+			var newValue = changes.subGet(o);
+			if (newValue != null) o.setTo(newValue);
+		case TSt(o, t): if (ns) {
+			var newValue = changes.subGet(o);
+			if (newValue != null) {
+				o.setTo(newValue);
+			} else { // obfuscate "com.package.className" strings
+				c = o.length;
+				mi = 0; // segment offset
+				mc = 0; // segments replaced
+				s = null; // resulting string
+				j = -1; while (++j <= c) {
+					if (j < c) k = o.charCodeAt(j); else k = ".".code;
+					if (k == ".".code) {
+						newValue = changes.get(o.string, o.offset + mi, j - mi);
+						if (newValue != null) {
+							if (s == null) s = o.string.substr(o.offset, mi);
+							else s += ".";
+							s += newValue;
+						} else if (s != null) {
+							k = o.offset;
+							s += "." + o.string.substring(k + mi, k + j);
+						}
+						mi = j + 1;
+					} else if (!isIdentX(k)) break;
 				}
-			} else if (changes.exists(o)) {
-				s = changes.get(o);
-				switch (tk) {
-				case TId(_): list[i] = TId(s);
-				default: if (ns) list[i] = TSt(s);
+				if (s != null) {
+					o.setTo(s);
 				}
-			} else if (o.length > 1) switch (tk) {
-			case TSt(o):
-				j = -1; c = o.length; s = ""; mi = 0; mc = 0;
-				if (ns) while (++j <= c) switch (ms = (j < c ? o.charAt(j) : ".")) {
-				case ".":
-					ms = o.substring(mi, j);
-					if (mi == j) break;
-					if (changes.exists(ms)) {
-						ms = changes.get(ms);
-					} else if (!exclude.exists(ms)) {
-						j = 0;
-						break;
-					}
-					if (s != "") s += ".";
-					s += ms;
-					mi = j + 1;
-					mc++;
-				default:
-					if ((j == mi ? CL_IDENT : CL_IDENTX).indexOf(ms) < 0) break;
-				}
-				if (mc > 1) list[i] = TSt(s);
-			default:
+			}
 			}
 		default:
 		}
+		section("rename");
 		//
 	}
 	/// Replaces string characters with escaped symbols with a chance.
-	public static function rEscape(list:Array<Token>, chance:Float):Void {
+	/*public static function rEscape(list:Array<Token>, chance:Float):Void {
 		var i:Int = -1, l:Int = list.length, j:Int, m:Int, r:String, n:Int;
 		while (++i < l) switch (list[i]) {
-		case TSt(s):
+		case TSt(s, t):
 			j = -1; m = s.length; r = "";
 			while (++j < m) if (Math.random() < chance) {
 				n = s.charCodeAt(j);
@@ -437,11 +420,12 @@ class Haxmin {
 			if (r != s) list[i] = TSt(r);
 		default:
 		}
-	}
+	}*/
 	public static function print(list:Array<Token>):String {
 		var b:StringBuf = new StringBuf(), 
 			i:Int = -1, l:Int = list.length, // iterators
 			s:String, sn:String = "", // string/next string
+			vi:Bool, // if thing should be printed
 			c0:String = "", c1:String,
 			k0:Int, k1:Int,
 			xc:Int, // extra character
@@ -449,11 +433,15 @@ class Haxmin {
 			tk:Token = TFlow(" ".code), ltk:Token, // token/last token
 			kwElse = keywordElse,
 			kwWhile = keywordWhile,
-			kwCatch = keywordCatch;
+			kwCatch = keywordCatch,
+			get_ = "get_",
+			set_ = "set_";
+		//
 		while (++i <= l) {
 			xc = 0;
 			ltk = tk;
-			s = sn; sn = tkString(tk = list[i]);
+			tk = list[i];
+			vi = true;
 			// micro-optimizations and fixes:
 			if (tk != null) switch (tk) {
 			case TId(_), TNu(_): switch (ltk) {
@@ -471,10 +459,10 @@ class Haxmin {
 				}
 			case TFlow(fc):
 				if (fc == "}".code) switch (ltk) {
-				case TFlow(fp): if (fp == ";".code) s = null;
+				case TFlow(fp): if (fp == ";".code) vi = false;
 				default:
 				} else if (fc == "]".code) switch (ltk) {
-				case TFlow(fp): if (fp == ",".code) s = null;
+				case TFlow(fp): if (fp == ",".code) vi = false;
 				default:
 				}
 			case TSy(s): switch (ltk) {
@@ -488,10 +476,36 @@ class Haxmin {
 				}
 			default:
 			}
-			if (s == null) continue;
-			b.addSub(s, 0);
+			if (!vi) continue;
+			// print token into buffer:
+			switch (ltk) {
+			case TFlow(o): b.addChar(o); c++;
+			case TDot: b.addChar(".".code); c++;
+			case TSy(o): o.writeTo(b); c += o.length;
+			case TSi(o): b.addChar(o); c++;
+			case TId(o, t):
+				if (t != 0) {
+					b.addSub(t > 0 ? get_ : set_, 0);
+					c += (t > 0 ? get_ : set_).length;
+				}
+				o.writeTo(b);
+				c += o.length;
+			case TSt(o, t):
+				if (t != 0) {
+					b.addSub(t > 0 ? get_ : set_, 0);
+					c += (t > 0 ? get_ : set_).length;
+				}
+				b.addChar("\"".code);
+				o.writeTo(b);
+				b.addChar("\"".code);
+				c += o.length + 2;
+			case TKw(o): b.addSub(SM_KEYWORD[o], 0); c += SM_KEYWORD[o].length;
+			case TNu(o): o.writeTo(b); c += o.length;
+			case TRx(o): o.writeTo(b); c += o.length;
+			default:
+			}
+			//b.addSub(s = tkString(ltk), 0);
 			if (xc != 0) { b.addChar(xc); c++; }
-			c += s.length;
 			// linebreaks:
 			if (c >= 8000) switch (ltk) {
 			case TFlow(o):
@@ -504,7 +518,7 @@ class Haxmin {
 		}
 		return b.toString();
 	}
-	public static function tkString(t:Token):String {
+	/*public static function tkString(t:Token):String {
 		var r = "";
 		if (t == null) return r;
 		switch (t) {
@@ -519,10 +533,143 @@ class Haxmin {
 			case TRx(o): r = o;
 		}
 		return r;
-	}
+	}*/
 	///
 }
 
-class OddHash {
+class SubString {
+	//
+	public var string:String;
+	public var offset:Int;
+	public var length:Int;
+	//
+	public function new(?string:String, ?offset:Int, ?length:Int) {
+		setTo(string, offset, length);
+	}
 	
+	public function setTo(string:String, ?offset:Int, ?length:Int):Void {
+		this.string = string;
+		if (string != null) {
+			if (offset == null) offset = 0;
+			this.offset = offset;
+			if (length == null) length = string.length - offset;
+			this.length = length;
+		}
+	}
+	
+	public function log() {
+		trace('[$offset, $length] ' + this.toString());
+	}
+	
+	public function toString():String {
+		return string.substr(offset, length);
+	}
+	
+	public inline function writeTo(buffer:StringBuf):Void {
+		buffer.addSub(string, offset, length);
+		//buffer.addSub(string.substr(offset, length), 0);
+	}
+	
+	public inline function charCodeAt(position:Int):Int {
+		return StringTools.fastCodeAt(string, offset + position);
+	}
+	
+	public function prefix():Int {
+		var i:Int, z:Bool;
+		if (length >= 4 && charCodeAt(3) == "_".code
+		&& ((z = (i = charCodeAt(0)) == "g".code) || i == "s".code)
+		&& charCodeAt(1) == "e".code && charCodeAt(2) == "t".code) {
+			offset += 4;
+			length -= 4;
+			return z ? 1 : -1;
+		}
+		return 0;
+	}
+}
+
+class StringLessMap<T> {
+	private var map:Map<Int, StringLessMap<T>>;
+	private var value:T;
+	
+	public function new() {
+		map = new Map();
+		value = null;
+	}
+	
+	function __get(string:String, offset:Int, length:Int):T {
+		if (length > 0) {
+			var m = map.get(StringTools.fastCodeAt(string, offset));
+			if (m != null) {
+				return m.__get(string, offset + 1, length - 1);
+			} else return null;
+		} else return value;
+	}
+	public function get(string:String, offset:Int = 0, length:Int = -1):T {
+		if (length == -1) length = string.length - offset;
+		return __get(string, offset, length);
+	}
+	public inline function subGet(sub:SubString):T {
+		return __get(sub.string, sub.offset, sub.length);
+	}
+	
+	function __set(string:String, offset:Int, length:Int, change:T):Void {
+		if (length > 0) {
+			var k = StringTools.fastCodeAt(string, offset),
+				m = map.get(k);
+			if (m == null) map.set(k, m = new StringLessMap());
+			m.__set(string, offset + 1, length - 1, change);
+		} else value = change;
+	}
+	public function set(string:String, change:T, offset:Int = 0, length:Int = -1):Void {
+		if (length == -1) length = string.length - offset;
+		__set(string, offset, length, change);
+	}
+	public inline function subSet(sub:SubString, change:T):Void {
+		__set(sub.string, sub.offset, sub.length, change);
+	}
+}
+
+class StringLessIntMap extends StringLessMap<Int> {
+	public function new() {
+		super();
+		value = 0;
+	}
+	function __add(string:String, offset:Int, length:Int, change:Int):Void {
+		if (length > 0) {
+			var k = StringTools.fastCodeAt(string, offset),
+				m:StringLessIntMap = cast map.get(k);
+			if (m == null) map.set(k, m = new StringLessIntMap());
+			m.__add(string, offset + 1, length - 1, change);
+		} else value += change;
+	}
+	public function add(string:String, change:Int, offset:Int = 0, length:Int = -1):Void {
+		if (length == -1) length = string.length - offset;
+		__add(string, offset, length, change);
+	}
+	public inline function subAdd(sub:SubString, change:Int):Void {
+		__add(sub.string, sub.offset, sub.length, change);
+	}
+	//
+	function __addx(string:String, offset:Int, length:Int, change:Int):Void {
+		if (length > 0) {
+			var k = StringTools.fastCodeAt(string, offset),
+				m:StringLessIntMap = cast map.get(k);
+			if (m == null) return;
+			m.__addx(string, offset + 1, length - 1, change);
+		} else if (value > 0) value += change;
+	}
+	public function addx(string:String, change:Int, offset:Int = 0, length:Int = -1):Void {
+		if (length == -1) length = string.length - offset;
+		__addx(string, offset, length, change);
+	}
+	public inline function subAddx(sub:SubString, change:Int):Void {
+		__addx(sub.string, sub.offset, sub.length, change);
+	}
+	public function forEach(f:String->Int->Void, s:String = ""):Void {
+		if (value != 0) f(s, value);
+		for (k in map.keys()) {
+			var v:StringLessIntMap = cast map.get(k);
+			v.forEach(f, s + String.fromCharCode(k));
+		}
+	}
 }
