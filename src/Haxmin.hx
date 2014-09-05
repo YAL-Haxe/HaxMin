@@ -155,18 +155,29 @@ class Haxmin {
 				while (++p < l && (d.substr(p, 2) != "*/")) { }
 				p++;
 			default:
+				// check whether the slash is likely to be starting a regular expression:
 				if (n >= 0) switch (r[n]) {
 					case TFlow(o): z = (o != ")".code) && (o != "]".code);
 					case TSy(_): z = true;
 					case TSi(_): z = true;
 					default: z = false;
 				} else z = true;
-				if (z) {
+				if (z) { // regular expression
 					q = p - 1;
-					while (++p < l && (k = d.charCodeAt(p)) != "/".code && !isNewline(k)) {
-						if (k == "\\".code) p++;
+					while (++p < l) switch (k = d.charCodeAt(p)) {
+					case "/".code: break;
+					case "\r".code, "\n".code: break;
+					case "\\".code: p++; // escape character
+					case "[".code: // character class
+						while (++p < l) switch (k = d.charCodeAt(p)) {
+							case "]".code: break;
+							case "\r".code, "\n".code:
+								p--;
+								break;
+							case "\\".code: p++;
+						}
 					}
-					if (isNewline(k)) { // unclosed, is not a regexp
+					if (p >= l || isNewline(k)) { // unclosed, is not a regexp
 						r[++n] = TSy(new SubString(d, q, 1)); p = q;
 					} else {
 						while (++p < l && CL_ALPHA.indexOf(c = d.charAt(p)) >= 0) { }
