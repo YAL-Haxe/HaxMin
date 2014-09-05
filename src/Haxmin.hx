@@ -227,9 +227,9 @@ class Haxmin {
 				p--;
 			} else if (isNumber(k)) { // number
 				q = p; while (++p < l && isNumber(k = char())) { }
-				if (k == "e".code) {
+				if (k == "e".code || k == "E".code) { // exponential
 					while (++p < l && isDigit(char())) { }
-				} else if (k == "x".code && p == q + 1) {
+				} else if (k == "x".code && p == q + 1) { // hexadecimal
 					while (++p < l && isHex(char())) { }
 				}
 				r[++n] = TNu(new SubString(d, q, p - q)); p--;
