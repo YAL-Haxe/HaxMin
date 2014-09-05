@@ -1,3 +1,5 @@
+.gitignore
+.gitattributes
 dbg/
-Run.bat
+*.bat
 *.hxproj
