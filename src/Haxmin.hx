@@ -16,7 +16,7 @@ enum Token {
 	TSi(o:Int); // A single symbol
 	TId(o:SubString, kind:Int); // identifier
 	TKw(o:Int); // for/while/etc.
-	TSt(o:SubString, kind:Int); // "string"
+	TSt(o:SubString, kind:Int, double:Bool); // double ? "string" : 'string'
 	TNu(o:SubString); // 0.0
 	TRx(o:SubString); // /magic/
 }
@@ -228,7 +228,7 @@ class Haxmin {
 			q = p + 1;
 			while (++p < l && (i = char()) != k) if (i == "\\".code) p++;
 			o = new SubString(d, q, p - q);
-			r[++n] = TSt(o, o.prefix());
+			r[++n] = TSt(o, o.prefix(), k == "\"".code);
 		default:
 			if (isIdent(k)) { // id/keyword
 				q = p; while (++p < l && isIdentX(char())) { }
@@ -292,7 +292,7 @@ class Haxmin {
 		section("refCount");
 		// Count up occurences in strings (if flag is set):
 		i = -1; if (ns) while (++i < l) switch (list[i]) {
-		case TSt(o, t):
+		case TSt(o, t, _):
 			if (t != 0) refCount.add(t > 0 ? "get_" : "set_", 1);
 			refCount.subAddx(o, 1);
 		default:
@@ -384,7 +384,7 @@ class Haxmin {
 		case TId(o, t):
 			var newValue = changes.subGet(o);
 			if (newValue != null) o.setTo(newValue);
-		case TSt(o, t): if (ns) {
+		case TSt(o, t, _): if (ns) {
 			var newValue = changes.subGet(o);
 			if (newValue != null) {
 				o.setTo(newValue);
@@ -501,14 +501,14 @@ class Haxmin {
 				}
 				o.writeTo(b);
 				c += o.length;
-			case TSt(o, t):
+			case TSt(o, t, d):
 				if (t != 0) {
 					b.addSub(t > 0 ? get_ : set_, 0);
 					c += (t > 0 ? get_ : set_).length;
 				}
-				b.addChar("\"".code);
+				b.addChar(d ? "\"".code : "'".code);
 				o.writeTo(b);
-				b.addChar("\"".code);
+				b.addChar(d ? "\"".code : "'".code);
 				c += o.length + 2;
 			case TKw(o): b.addSub(SM_KEYWORD[o], 0); c += SM_KEYWORD[o].length;
 			case TNu(o): o.writeTo(b); c += o.length;
