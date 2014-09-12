@@ -459,6 +459,7 @@ class Haxmin {
 				case TId(_): xc = " ".code;
 				case TKw(_): xc = " ".code;
 				case TNu(_): xc = " ".code;
+				case TFlow(fp): if (fp == "}".code) xc = ";".code;
 				default:
 				}
 			case TKw(kw): switch (ltk) {
@@ -502,11 +503,11 @@ class Haxmin {
 				o.writeTo(b);
 				c += o.length;
 			case TSt(o, t, d):
+				b.addChar(d ? "\"".code : "'".code);
 				if (t != 0) {
 					b.addSub(t > 0 ? get_ : set_, 0);
 					c += (t > 0 ? get_ : set_).length;
 				}
-				b.addChar(d ? "\"".code : "'".code);
 				o.writeTo(b);
 				b.addChar(d ? "\"".code : "'".code);
 				c += o.length + 2;
