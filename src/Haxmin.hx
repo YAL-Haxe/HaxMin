@@ -559,6 +559,11 @@ class Haxmin {
 	///
 }
 
+/**
+ * Represents a pointer to string fragment.
+ * Needed because Neko lacks immutable strings
+ * (thus string operations cause reallocations).
+ */
 class SubString {
 	//
 	public var string:String;
@@ -589,13 +594,17 @@ class SubString {
 	
 	public inline function writeTo(buffer:StringBuf):Void {
 		buffer.addSub(string, offset, length);
-		//buffer.addSub(string.substr(offset, length), 0);
 	}
 	
 	public inline function charCodeAt(position:Int):Int {
 		return StringTools.fastCodeAt(string, offset + position);
 	}
 	
+	/**
+	 * Can be executed post-init to resolve whether this Substring has a get_/set_ prefix.
+	 * String offset is changed accordingly in process.
+	 * @return -1 for `get_`, +1 for `set_`, 0 for no prefix.
+	 */
 	public function prefix():Int {
 		var i:Int, z:Bool;
 		if (length >= 4 && charCodeAt(3) == "_".code
@@ -609,7 +618,12 @@ class SubString {
 	}
 }
 
+/**
+ * Represents a Map-like structure that avoids the use of String type for keys
+ * (again, for Neko VM performance).
+ */
 class StringLessMap<T> {
+	/// index is character code, value is map for next character in string
 	private var map:Map<Int, StringLessMap<T>>;
 	private var value:T;
 	
