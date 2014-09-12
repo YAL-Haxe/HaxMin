@@ -456,29 +456,39 @@ class Haxmin {
 			// micro-optimizations and fixes:
 			if (tk != null) switch (tk) {
 			case TId(_), TNu(_): switch (ltk) {
-				case TId(_): xc = " ".code;
-				case TKw(_): xc = " ".code;
-				case TNu(_): xc = " ".code;
+				// insert a space between pairs of ids/numbers/keywords [1]:
+				case TId(_), TKw(_), TNu(_): xc = " ".code;
+				// insert a semicolon between "}" and ids/numbers:
 				case TFlow(fp): if (fp == "}".code) xc = ";".code;
 				default:
 				}
 			case TKw(kw): switch (ltk) {
+				// insert a semicolon between "}" and keywords:
 				case TFlow(fc): if (fc == "}".code && kw != kwElse
 				&& kw != kwWhile && kw != kwCatch) xc = ";".code;
-				case TKw(_): xc = " ".code;
-				case TId(_), TNu(_): xc = " ".code;
+				// insert a space between pairs of ids/numbers/keywords [2]:
+				case TKw(_), TId(_), TNu(_): xc = " ".code;
 				default:
 				}
-			case TFlow(fc):
-				if (fc == "}".code) switch (ltk) {
-				case TFlow(fp): if (fp == ";".code) vi = false;
-				default:
-				} else if (fc == "]".code) switch (ltk) {
-				case TFlow(fp): if (fp == ",".code) vi = false;
-				default:
+			case TFlow(fc): switch (fc) {
+				case "}".code: switch (ltk) {
+					case TFlow(fp): switch (fp) {
+						// last semicolon before "}" can be omitted:
+						case ";".code: vi = false;
+						// last comma before "}" *should* be omitted:
+						case ",".code: vi = false;
+						}
+					default:
+					}
+				case "]".code: switch (ltk) {
+					// last comma before "]" *should* be omitted:
+					case TFlow(fp): if (fp == ",".code) vi = false;
+					default:
+					} 
 				}
 			case TSy(s): switch (ltk) {
 				case TSy(sp):
+					// ensure that "touching" symbols do not accidentally form an *crement operator:
 					k0 = sp.charCodeAt(sp.length - 1);
 					k1 = s.charCodeAt(0);
 					if ((k0 == "+".code || k0 == "-".code) && (k1 == "+".code || k1 == "-".code)) {
@@ -496,7 +506,7 @@ class Haxmin {
 			case TSy(o): o.writeTo(b); c += o.length;
 			case TSi(o): b.addChar(o); c++;
 			case TId(o, t):
-				if (t != 0) {
+				if (t != 0) { // get_/set_ prefix
 					b.addSub(t > 0 ? get_ : set_, 0);
 					c += (t > 0 ? get_ : set_).length;
 				}
@@ -504,7 +514,7 @@ class Haxmin {
 				c += o.length;
 			case TSt(o, t, d):
 				b.addChar(d ? "\"".code : "'".code);
-				if (t != 0) {
+				if (t != 0) { // get_/set_ prefix
 					b.addSub(t > 0 ? get_ : set_, 0);
 					c += (t > 0 ? get_ : set_).length;
 				}
