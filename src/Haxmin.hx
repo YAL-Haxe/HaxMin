@@ -210,7 +210,7 @@ class Haxmin {
 				r[++n] = TSy(new SubString(d, q, 1));
 			}
 		case "!".code, "=".code:
-			// `!`, `!=`, `!==`
+			// `!`, `!=`, `!==`, `===`
 			q = p;
 			if (next() == "=".code) {
 				if (next() != "=".code) p--;
@@ -526,7 +526,7 @@ class Haxmin {
 			case TRx(o): o.writeTo(b); c += o.length;
 			default:
 			}
-			//b.addSub(s = tkString(ltk), 0);
+			// extra character handling:
 			if (xc != 0) { b.addChar(xc); c++; }
 			// linebreaks:
 			if (c >= 8000) switch (ltk) {
@@ -540,23 +540,6 @@ class Haxmin {
 		}
 		return b.toString();
 	}
-	/*public static function tkString(t:Token):String {
-		var r = "";
-		if (t == null) return r;
-		switch (t) {
-			case TFlow(o): r = String.fromCharCode(o);
-			case TDot: r = ".";
-			case TSy(o): r = o;
-			case TSi(o): r = String.fromCharCode(o);
-			case TId(o): r = o;
-			case TKw(o): r = SM_KEYWORD[o];
-			case TSt(o): r = "\"" + o + "\"";
-			case TNu(o): r = o;
-			case TRx(o): r = o;
-		}
-		return r;
-	}*/
-	///
 }
 
 /**
