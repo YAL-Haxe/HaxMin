@@ -1,3 +1,27 @@
+// Default exclusion file.
+// Identifiers are listed one per line.
+// Lines starting with non-identifier character (such as this one) are ignored.
+
+// commonly problematic names (HTML/CSS):
+image
+repeat
+
+// OpenFL asset types:
+BINARY
+FONT
+IMAGE
+MOVIE_CLIP
+MUSIC
+SOUND
+TEMPLATE
+TEXT
+
+// JSON:
+JSON
+parse
+stringify
+
+// js.html API (auto-generated):
 openKeyCursor
 deleteTFoot
 FONT_FACE_RULE
@@ -3384,12 +3408,3 @@ BLEND_DST_ALPHA
 strokeStyle
 closed
 TextTrackList
-image
-BINARY
-FONT
-IMAGE
-MOVIE_CLIP
-MUSIC
-SOUND
-TEMPLATE
-TEXT
