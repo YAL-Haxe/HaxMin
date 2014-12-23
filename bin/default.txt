@@ -16,6 +16,12 @@ SOUND
 TEMPLATE
 TEXT
 
+// canvas/context:
+oImageSmoothingEnabled
+msImageSmoothingEnabled
+webkitImageSmoothingEnabled
+mozImageSmoothingEnabled
+
 // JSON:
 JSON
 parse
