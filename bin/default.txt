@@ -5,6 +5,9 @@
 // commonly problematic names (HTML/CSS):
 image
 repeat
+transparent
+black
+white
 
 // OpenFL asset types:
 BINARY

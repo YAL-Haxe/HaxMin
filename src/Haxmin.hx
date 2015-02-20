@@ -37,6 +37,7 @@ class Haxmin {
 	private static var keywordElse:Int;
 	private static var keywordWhile:Int;
 	private static var keywordCatch:Int;
+	private static var keywordFinally:Int;
 	public static var SL_EXCLUDE:Array<String>;
 	//
 	private static inline function isNewline(k:Int) {
@@ -95,6 +96,7 @@ class Haxmin {
 		keywordElse = SL_KEYWORD.get("else");
 		keywordCatch = SL_KEYWORD.get("catch");
 		keywordWhile = SL_KEYWORD.get("while");
+		keywordFinally = SL_KEYWORD.get("finally");
 		// basic exclusion list:
 		SL_EXCLUDE = [
 		// console and tracing:
@@ -445,6 +447,7 @@ class Haxmin {
 			kwElse = keywordElse,
 			kwWhile = keywordWhile,
 			kwCatch = keywordCatch,
+			kwFinally = keywordFinally,
 			get_ = "get_",
 			set_ = "set_";
 		//
@@ -464,8 +467,9 @@ class Haxmin {
 				}
 			case TKw(kw): switch (ltk) {
 				// insert a semicolon between "}" and keywords:
-				case TFlow(fc): if (fc == "}".code && kw != kwElse
-				&& kw != kwWhile && kw != kwCatch) xc = ";".code;
+				case TFlow(fc):
+					if (fc == "}".code && kw != kwElse
+				&& kw != kwWhile && kw != kwCatch && kw != kwFinally) xc = ";".code;
 				// insert a space between pairs of ids/numbers/keywords [2]:
 				case TKw(_), TId(_), TNu(_): xc = " ".code;
 				default:
