@@ -166,6 +166,7 @@ class Haxmin {
 				} else z = true;
 				if (z) { // regular expression
 					q = p - 1;
+					p--;
 					while (++p < l) switch (k = d.charCodeAt(p)) {
 					case "/".code: break;
 					case "\r".code, "\n".code: break;
